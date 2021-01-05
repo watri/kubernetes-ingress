@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
 
 DIFFROOT="${SCRIPT_ROOT}/pkg"
 TMP_DIFFROOT="${SCRIPT_ROOT}/_tmp/pkg"
@@ -43,6 +43,6 @@ if [[ $ret -eq 0 ]]
 then
   echo "${DIFFROOT} up to date."
 else
-  echo "${DIFFROOT} is out of date. Please run hack/update-codegen.sh"
+  echo "${DIFFROOT} is out of date. Please regenerate code"
   exit 1
 fi
