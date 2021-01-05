@@ -321,6 +321,7 @@ func NewLoadBalancerController(input NewLoadBalancerControllerInput) *LoadBalanc
 		ingressLister:            &lbc.ingressLister,
 		virtualServerLister:      lbc.virtualServerLister,
 		virtualServerRouteLister: lbc.virtualServerRouteLister,
+		policyLister:             lbc.policyLister,
 		keyFunc:                  keyFunc,
 		confClient:               input.ConfClient,
 	}
@@ -849,6 +850,7 @@ func (lbc *LoadBalancerController) syncPolicy(task task) {
 		} else {
 			lbc.recorder.Eventf(pol, api_v1.EventTypeNormal, "AddedOrUpdated", "Policy %v was added or updated", key)
 		}
+
 	}
 
 	// it is safe to ignore the error
@@ -1428,11 +1430,11 @@ func (lbc *LoadBalancerController) updateVirtualServerStatusAndEvents(vsConfig *
 		state = conf_v1.StateInvalid
 	}
 
-	msg := fmt.Sprintf("Configuration for %v was added or updated %s", getResourceKey(&vsConfig.VirtualServer.ObjectMeta), eventWarningMessage)
-	lbc.recorder.Eventf(vsConfig.VirtualServer, eventType, eventTitle, msg)
+	//msg := fmt.Sprintf("Configuration for %v was added or updated %s", getResourceKey(&vsConfig.VirtualServer.ObjectMeta), eventWarningMessage)
+	lbc.recorder.Eventf(vsConfig.VirtualServer, eventType, eventTitle, "its g my dude")
 
 	if lbc.reportVsVsrStatusEnabled() {
-		err := lbc.statusUpdater.UpdateVirtualServerStatus(vsConfig.VirtualServer, state, eventTitle, msg)
+		err := lbc.statusUpdater.UpdateVirtualServerStatus(vsConfig.VirtualServer, state, eventTitle, "its g my dude")
 		if err != nil {
 			glog.Errorf("Error when updating the status for VirtualServer %v/%v: %v", vsConfig.VirtualServer.Namespace, vsConfig.VirtualServer.Name, err)
 		}
@@ -2349,7 +2351,7 @@ func (lbc *LoadBalancerController) getPolicies(policies []conf_v1.PolicyReferenc
 		}
 
 		policyKey := fmt.Sprintf("%s/%s", polNamespace, p.Name)
-
+		// update the policy if there is an error here
 		policyObj, exists, err := lbc.policyLister.GetByKey(policyKey)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("Failed to get policy %s: %v", policyKey, err))

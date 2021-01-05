@@ -11,6 +11,7 @@ import (
 	"github.com/golang/glog"
 	conf_v1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1"
 	v1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1"
+	conf_v1alpha1 "github.com/nginxinc/kubernetes-ingress/pkg/apis/configuration/v1alpha1"
 	k8s_nginx "github.com/nginxinc/kubernetes-ingress/pkg/client/clientset/versioned"
 	api_v1 "k8s.io/api/core/v1"
 	networking "k8s.io/api/networking/v1beta1"
@@ -40,6 +41,7 @@ type statusUpdater struct {
 	ingressLister            *storeToIngressLister
 	virtualServerLister      cache.Store
 	virtualServerRouteLister cache.Store
+	policyLister             cache.Store
 	confClient               k8s_nginx.Interface
 }
 
@@ -557,4 +559,66 @@ func (su *statusUpdater) generateExternalEndpointsFromStatus(status []api_v1.Loa
 	}
 
 	return externalEndpoints
+}
+
+func hasPolicyStatusChanged(pol *conf_v1alpha1.Policy, state string, reason string, message string) bool {
+	if pol.Status.State != state {
+		return true
+	}
+
+	if pol.Status.Reason != reason {
+		return true
+	}
+
+	if pol.Status.Message != message {
+		return true
+	}
+
+	return false
+}
+
+// UpdatePolicyStatus updates the status of a Policy.
+func (su *statusUpdater) updatePoliciesStatus(pol *conf_v1alpha1.Policy, state string, reason string, message string) error {
+	// Get an up-to-date Policy from the Store
+	polLatest, exists, err := su.policyLister.Get(pol)
+	if err != nil {
+		glog.V(3).Infof("error getting policy from Store: %v", err)
+		return err
+	}
+	if !exists {
+		glog.V(3).Infof("Policy doesn't exist in Store")
+		return nil
+	}
+
+	polCopy := polLatest.(*conf_v1alpha1.Policy).DeepCopy()
+
+	if !hasPolicyStatusChanged(polCopy, state, reason, message) {
+		return nil
+	}
+
+	polCopy.Status.State = state
+	polCopy.Status.Reason = reason
+	polCopy.Status.Message = message
+
+	/*_, err = su.confClient.K8sV1alpha1().Policies(polCopy.Namespace).UpdateStatus(context.TODO(), polCopy, metav1.UpdateOptions{})
+	if err != nil {
+		glog.V(3).Infof("error setting Policy %v/%v status, retrying: %v", polCopy.Namespace, polCopy.Name, err)
+		return su.retryUpdatePolicyStatus(polCopy)
+	}*/
+	return err
+}
+
+func (su *statusUpdater) retryUpdatePolicyStatus(polCopy *conf_v1alpha1.Policy) error {
+	pol, err := su.confClient.K8sV1alpha1().Policies(polCopy.Namespace).Get(context.TODO(), polCopy.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	pol.Status = polCopy.Status
+	/*_, err = su.confClient.K8sV1alpha1().Policies(pol.Namespace).UpdateStatus(context.TODO(), pol, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}*/
+
+	return nil
 }
