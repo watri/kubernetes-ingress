@@ -5,7 +5,7 @@ upstream {{ $u.Name }} {
     {{ if $u.LBMethod }}{{ $u.LBMethod }};{{ end }}
 
     {{ range $s := $u.Servers }}
-    server {{ $s.Address }} max_fails={{ $u.MaxFails }} fail_timeout={{ $u.FailTimeout }} max_conns={{ $u.MaxConns }};
+    server {{ $s.Address }} max_fails={{ $u.MaxFails }} "fail_timeout={{ $u.FailTimeout }}" max_conns={{ $u.MaxConns }};
     {{ end }}
 
     {{ if $u.Keepalive }}
@@ -260,9 +260,9 @@ server {
             {{ range $r := $l.Rewrites }}
         rewrite {{ $r }};
             {{ end }}
-        proxy_connect_timeout {{ $l.ProxyConnectTimeout }};
-        proxy_read_timeout {{ $l.ProxyReadTimeout }};
-        proxy_send_timeout {{ $l.ProxySendTimeout }};
+        proxy_connect_timeout "{{ $l.ProxyConnectTimeout }}";
+        proxy_read_timeout "{{ $l.ProxyReadTimeout }}";
+        proxy_send_timeout "{{ $l.ProxySendTimeout }}";
         client_max_body_size {{ $l.ClientMaxBodySize }};
 
             {{ if $l.ProxyMaxTempFileSize }}

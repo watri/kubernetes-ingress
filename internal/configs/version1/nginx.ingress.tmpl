@@ -4,7 +4,7 @@ upstream {{$upstream.Name}} {
 	{{if ne $upstream.UpstreamZoneSize "0"}}zone {{$upstream.Name}} {{$upstream.UpstreamZoneSize}};{{end}}
 	{{if $upstream.LBMethod }}{{$upstream.LBMethod}};{{end}}
 	{{range $server := $upstream.UpstreamServers}}
-	server {{$server.Address}}:{{$server.Port}} max_fails={{$server.MaxFails}} fail_timeout={{$server.FailTimeout}} max_conns={{$server.MaxConns}};{{end}}
+	server {{$server.Address}}:{{$server.Port}} max_fails={{$server.MaxFails}} "fail_timeout={{$server.FailTimeout}}" max_conns={{$server.MaxConns}};{{end}}
 	{{if $.Keepalive}}keepalive {{$.Keepalive}};{{end}}
 }{{end}}
 
@@ -116,9 +116,9 @@ server {
 		{{$value}}{{end}}
 		{{- end}}
 
-		grpc_connect_timeout {{$location.ProxyConnectTimeout}};
-		grpc_read_timeout {{$location.ProxyReadTimeout}};
-		grpc_send_timeout {{$location.ProxySendTimeout}};
+		grpc_connect_timeout "{{$location.ProxyConnectTimeout}}";
+		grpc_read_timeout "{{$location.ProxyReadTimeout}}";
+		grpc_send_timeout "{{$location.ProxySendTimeout}}";
 		grpc_set_header Host $host;
 		grpc_set_header X-Real-IP $remote_addr;
 		grpc_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -148,9 +148,9 @@ server {
 		{{$value}}{{end}}
 		{{- end}}
 
-		proxy_connect_timeout {{$location.ProxyConnectTimeout}};
-		proxy_read_timeout {{$location.ProxyReadTimeout}};
-		proxy_send_timeout {{$location.ProxySendTimeout}};
+		proxy_connect_timeout "{{$location.ProxyConnectTimeout}}";
+		proxy_read_timeout "{{$location.ProxyReadTimeout}}";
+		proxy_send_timeout "{{$location.ProxySendTimeout}}";
 		client_max_body_size {{$location.ClientMaxBodySize}};
 		proxy_set_header Host $host;
 		proxy_set_header X-Real-IP $remote_addr;
