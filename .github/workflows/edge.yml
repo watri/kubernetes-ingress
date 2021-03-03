@@ -86,139 +86,139 @@ jobs:
       - name: Run Tests
         run: go test ./...
 
-  build:
-    name: Build Docker Images
-    runs-on: ${{ matrix.os }}
-    needs: [binary, unit-tests]
-    if:
-      github.event.pull_request.head.repo.full_name == 'nginxinc/kubernetes-ingress' ||
-      github.event_name == 'push'
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-20.04
-            file: build/Dockerfile
-            context: '.'
-            target: local
-            image: debian
-            type: oss
-          - os: ubuntu-20.04
-            file: build/Dockerfile
-            context: '.'
-            target: local
-            image: alpine
-            type: oss
-          - os: ubuntu-20.04
-            file: build/Dockerfile
-            context: '.'
-            target: local
-            image: debian-plus
-            type: plus
-          - os: ubuntu-20.04
-            file: build/Dockerfile
-            context: '.'
-            target: local
-            image: opentracing
-            type: oss
-          - os: ubuntu-20.04
-            file: build/Dockerfile
-            context: '.'
-            target: local
-            image: opentracing-plus
-            type: plus
-          - os: ubuntu-20.04
-            file: build/Dockerfile
-            context: '.'
-            target: local
-            image: openshift
-            type: oss
-          - os: ubuntu-20.04
-            file: build/Dockerfile
-            context: '.'
-            target: local
-            image: openshift-plus
-            type: plus
-          - os: ubuntu-20.04
-            file: build/Dockerfile
-            context: '.'
-            target: local
-            image: debian-plus-ap
-            type: plus-ap
-          - os: ubuntu-20.04
-            file: build/DockerfileWithAppProtectForPlusForOpenShift
-            context: '.'
-            target: local
-            image: nginx-plus-ingress-ap-openshift
-            type: plus-ap-openshift
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-      - name: Fetch Cached Artifacts
-        uses: actions/cache@v2.1.4
-        with:
-          path: ${{ github.workspace }}/nginx-ingress
-          key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
-      - name: Docker Buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          driver-opts: network=host
-      - name: Cache Docker layers
-        uses: actions/cache@v2.1.4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-      - name: Build Docker Image ${{ matrix.image }}
-        uses: docker/build-push-action@v2
-        with:
-          file: ${{ matrix.file }}
-          context: ${{ matrix.context }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-          target: ${{ matrix.target }}
-          tags: ${{ matrix.image }}:${{ github.sha }}
-          build-args: |
-            BUILD_OS=${{ matrix.image }}
-        if: matrix.type == 'oss'
-      - name: Build Plus Docker Image ${{ matrix.image }}
-        uses: docker/build-push-action@v2
-        with:
-          file: ${{ matrix.file }}
-          context: ${{ matrix.context }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-          target: ${{ matrix.target }}
-          tags: ${{ matrix.image }}:${{ github.sha }}
-          secrets: |
-            "nginx-repo.crt=${{ secrets.KIC_NGINX_CRT }}"
-            "nginx-repo.key=${{ secrets.KIC_NGINX_KEY }}"
-          build-args: |
-            BUILD_OS=${{ matrix.image }}
-            PLUS=-plus
-        if: matrix.type == 'plus'
-      - name: Build AP Docker Image ${{ matrix.image }}
-        uses: docker/build-push-action@v2
-        with:
-          file: ${{ matrix.file }}
-          context: ${{ matrix.context }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-          target: ${{ matrix.target }}
-          tags: ${{ matrix.image }}:${{ github.sha }}
-          secrets: |
-            "nginx-repo.crt=${{ secrets.KIC_NGINX_AP_CRT }}"
-            "nginx-repo.key=${{ secrets.KIC_NGINX_AP_KEY }}"
-            "rhel_license=${{ secrets.KIC_RHEL_LICENSE }}"
-          build-args: |
-            BUILD_OS=${{ matrix.image }}
-            PLUS=-plus
-        if: matrix.type == 'plus-ap' || matrix.type == 'plus-ap-openshift'
+  # build:
+  #   name: Build Docker Images
+  #   runs-on: ${{ matrix.os }}
+  #   needs: [binary, unit-tests]
+  #   if:
+  #     github.event.pull_request.head.repo.full_name == 'nginxinc/kubernetes-ingress' ||
+  #     github.event_name == 'push'
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - os: ubuntu-20.04
+  #           file: build/Dockerfile
+  #           context: '.'
+  #           target: local
+  #           image: debian
+  #           type: oss
+  #         - os: ubuntu-20.04
+  #           file: build/Dockerfile
+  #           context: '.'
+  #           target: local
+  #           image: alpine
+  #           type: oss
+  #         - os: ubuntu-20.04
+  #           file: build/Dockerfile
+  #           context: '.'
+  #           target: local
+  #           image: debian-plus
+  #           type: plus
+  #         - os: ubuntu-20.04
+  #           file: build/Dockerfile
+  #           context: '.'
+  #           target: local
+  #           image: opentracing
+  #           type: oss
+  #         - os: ubuntu-20.04
+  #           file: build/Dockerfile
+  #           context: '.'
+  #           target: local
+  #           image: opentracing-plus
+  #           type: plus
+  #         - os: ubuntu-20.04
+  #           file: build/Dockerfile
+  #           context: '.'
+  #           target: local
+  #           image: openshift
+  #           type: oss
+  #         - os: ubuntu-20.04
+  #           file: build/Dockerfile
+  #           context: '.'
+  #           target: local
+  #           image: openshift-plus
+  #           type: plus
+  #         - os: ubuntu-20.04
+  #           file: build/Dockerfile
+  #           context: '.'
+  #           target: local
+  #           image: debian-plus-ap
+  #           type: plus-ap
+  #         - os: ubuntu-20.04
+  #           file: build/DockerfileWithAppProtectForPlusForOpenShift
+  #           context: '.'
+  #           target: local
+  #           image: nginx-plus-ingress-ap-openshift
+  #           type: plus-ap-openshift
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v2
+  #     - name: Fetch Cached Artifacts
+  #       uses: actions/cache@v2.1.4
+  #       with:
+  #         path: ${{ github.workspace }}/nginx-ingress
+  #         key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
+  #     - name: Docker Buildx
+  #       uses: docker/setup-buildx-action@v1
+  #       with:
+  #         driver-opts: network=host
+  #     - name: Cache Docker layers
+  #       uses: actions/cache@v2.1.4
+  #       with:
+  #         path: /tmp/.buildx-cache
+  #         key: ${{ runner.os }}-buildx-${{ github.sha }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-buildx-
+  #     - name: Build Docker Image ${{ matrix.image }}
+  #       uses: docker/build-push-action@v2
+  #       with:
+  #         file: ${{ matrix.file }}
+  #         context: ${{ matrix.context }}
+  #         cache-from: type=local,src=/tmp/.buildx-cache
+  #         cache-to: type=local,dest=/tmp/.buildx-cache
+  #         target: ${{ matrix.target }}
+  #         tags: ${{ matrix.image }}:${{ github.sha }}
+  #         build-args: |
+  #           BUILD_OS=${{ matrix.image }}
+  #       if: matrix.type == 'oss'
+  #     - name: Build Plus Docker Image ${{ matrix.image }}
+  #       uses: docker/build-push-action@v2
+  #       with:
+  #         file: ${{ matrix.file }}
+  #         context: ${{ matrix.context }}
+  #         cache-from: type=local,src=/tmp/.buildx-cache
+  #         cache-to: type=local,dest=/tmp/.buildx-cache
+  #         target: ${{ matrix.target }}
+  #         tags: ${{ matrix.image }}:${{ github.sha }}
+  #         secrets: |
+  #           "nginx-repo.crt=${{ secrets.KIC_NGINX_CRT }}"
+  #           "nginx-repo.key=${{ secrets.KIC_NGINX_KEY }}"
+  #         build-args: |
+  #           BUILD_OS=${{ matrix.image }}
+  #           PLUS=-plus
+  #       if: matrix.type == 'plus'
+  #     - name: Build AP Docker Image ${{ matrix.image }}
+  #       uses: docker/build-push-action@v2
+  #       with:
+  #         file: ${{ matrix.file }}
+  #         context: ${{ matrix.context }}
+  #         cache-from: type=local,src=/tmp/.buildx-cache
+  #         cache-to: type=local,dest=/tmp/.buildx-cache
+  #         target: ${{ matrix.target }}
+  #         tags: ${{ matrix.image }}:${{ github.sha }}
+  #         secrets: |
+  #           "nginx-repo.crt=${{ secrets.KIC_NGINX_AP_CRT }}"
+  #           "nginx-repo.key=${{ secrets.KIC_NGINX_AP_KEY }}"
+  #           "rhel_license=${{ secrets.KIC_RHEL_LICENSE }}"
+  #         build-args: |
+  #           BUILD_OS=${{ matrix.image }}
+  #           PLUS=-plus
+  #       if: matrix.type == 'plus-ap' || matrix.type == 'plus-ap-openshift'
 
   smoke-tests:
     name: Smoke Tests
     runs-on: ${{ matrix.os }}
-    needs: [build, binary, unit-tests]
+    needs: [binary, unit-tests]
     if:
       github.event.pull_request.head.repo.full_name == 'nginxinc/kubernetes-ingress' ||
       github.event_name == 'push'
@@ -389,272 +389,272 @@ jobs:
           path: ${{ github.workspace }}/tests/tests-${{ steps.k8s.outputs.cluster }}.html
         if: always()
 
-  helm-tests:
-    name: Helm Tests
-    runs-on: ${{ matrix.os }}
-    needs: [build, binary, unit-tests]
-    env:
-      NGINX_HTTP_PORT: 8080
-      NGINX_HTTPS_PORT: 8443
-      HELM_TEST_RETRIES: 5
-    if:
-      github.event.pull_request.head.repo.full_name == 'nginxinc/kubernetes-ingress' ||
-      github.event_name == 'push'
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-20.04
-            image: nginx-ingress
-            tag: ${{ github.sha }}
-            type: oss
-          - os: ubuntu-20.04
-            image: nginx-plus-ingress
-            tag: ${{ github.sha }}
-            type: plus
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-      - name: Fetch Cached Artifacts
-        uses: actions/cache@v2.1.4
-        with:
-          path: ${{ github.workspace }}/nginx-ingress
-          key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
-      - name: Docker Buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          driver-opts: network=host
-      - name: Docker build cache
-        uses: actions/cache@v2.1.4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-      - name: Build Docker Image ${{ matrix.image }}
-        uses: docker/build-push-action@v2
-        with:
-          file: build/Dockerfile
-          context: '.'
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-          target: local
-          tags: ${{ matrix.image }}:${{ matrix.tag }}
-          load: true
-          build-args: |
-            BUILD_OS=debian
-      - name: Build Plus Docker Image ${{ matrix.image }}
-        uses: docker/build-push-action@v2
-        with:
-          file: build/Dockerfile
-          context: '.'
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-          target: local
-          tags: ${{ matrix.image }}:${{ matrix.tag }}
-          load: true
-          secrets: |
-            "nginx-repo.crt=${{ secrets.KIC_NGINX_CRT }}"
-            "nginx-repo.key=${{ secrets.KIC_NGINX_KEY }}"
-          build-args: |
-            BUILD_OS=debian-plus
-            PLUS=-plus
-        if: matrix.type == 'plus'
-      - name: Deploy Kubernetes
-        id: k8s
-        run: |
-          kind create cluster --name ${{ github.run_id }} --image=kindest/node:v${{ env.K8S_VERSION }} --wait ${{ env.K8S_TIMEOUT }}
-          kind load docker-image ${{ matrix.image }}:${{ matrix.tag }} --name ${{ github.run_id }}
-      - name: Install Chart
-        run: >
-          helm install
-          ${{ matrix.type }}
-          .
-          --set controller.image.repository=${{ matrix.image }}
-          --set controller.image.tag=${{ matrix.tag }}
-          --set controller.service.type=NodePort
-          --set controller.nginxplus=$([[ "${{ matrix.type }}" = "plus" ]] && echo "true" || echo "false")
-          --wait
-        working-directory: ${{ github.workspace }}/deployments/helm-chart
-      - name: Expose Test Ingresses
-        run: |
-          kubectl port-forward service/${{ matrix.type }}-nginx-ingress ${{ env.NGINX_HTTP_PORT }}:80 &
-          kubectl port-forward service/${{ matrix.type }}-nginx-ingress ${{ env.NGINX_HTTPS_PORT }}:443 &
-      - name: Test HTTP
-        run: |
-          counter=0
-          max_attempts=${{ env.HELM_TEST_RETRIES }}
-          until [ $(curl --write-out %{http_code} -s --output /dev/null http://localhost:${{ env.NGINX_HTTP_PORT }}) -eq 404 ]; do
-            if [ ${counter} -eq ${max_attempts} ]; then
-              exit 1
-            fi
-            printf '.'; counter=$(($counter+1)); sleep 5;
-          done
-      - name: Test HTTPS
-        run: |
-          counter=0
-          max_attempts=${{ env.HELM_TEST_RETRIES }}
-          until [ $(curl --write-out %{http_code} -ks --output /dev/null https://localhost:${{ env.NGINX_HTTPS_PORT }}) -eq 404 ]; do
-            if [ ${counter} -eq ${max_attempts} ]; then
-              exit 1
-            fi
-            printf '.'; counter=$(($counter+1)); sleep 5;
-          done
+  # helm-tests:
+  #   name: Helm Tests
+  #   runs-on: ${{ matrix.os }}
+  #   needs: [build, binary, unit-tests]
+  #   env:
+  #     NGINX_HTTP_PORT: 8080
+  #     NGINX_HTTPS_PORT: 8443
+  #     HELM_TEST_RETRIES: 5
+  #   if:
+  #     github.event.pull_request.head.repo.full_name == 'nginxinc/kubernetes-ingress' ||
+  #     github.event_name == 'push'
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - os: ubuntu-20.04
+  #           image: nginx-ingress
+  #           tag: ${{ github.sha }}
+  #           type: oss
+  #         - os: ubuntu-20.04
+  #           image: nginx-plus-ingress
+  #           tag: ${{ github.sha }}
+  #           type: plus
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v2
+  #     - name: Fetch Cached Artifacts
+  #       uses: actions/cache@v2.1.4
+  #       with:
+  #         path: ${{ github.workspace }}/nginx-ingress
+  #         key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
+  #     - name: Docker Buildx
+  #       uses: docker/setup-buildx-action@v1
+  #       with:
+  #         driver-opts: network=host
+  #     - name: Docker build cache
+  #       uses: actions/cache@v2.1.4
+  #       with:
+  #         path: /tmp/.buildx-cache
+  #         key: ${{ runner.os }}-buildx-${{ github.sha }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-buildx-
+  #     - name: Build Docker Image ${{ matrix.image }}
+  #       uses: docker/build-push-action@v2
+  #       with:
+  #         file: build/Dockerfile
+  #         context: '.'
+  #         cache-from: type=local,src=/tmp/.buildx-cache
+  #         cache-to: type=local,dest=/tmp/.buildx-cache
+  #         target: local
+  #         tags: ${{ matrix.image }}:${{ matrix.tag }}
+  #         load: true
+  #         build-args: |
+  #           BUILD_OS=debian
+  #     - name: Build Plus Docker Image ${{ matrix.image }}
+  #       uses: docker/build-push-action@v2
+  #       with:
+  #         file: build/Dockerfile
+  #         context: '.'
+  #         cache-from: type=local,src=/tmp/.buildx-cache
+  #         cache-to: type=local,dest=/tmp/.buildx-cache
+  #         target: local
+  #         tags: ${{ matrix.image }}:${{ matrix.tag }}
+  #         load: true
+  #         secrets: |
+  #           "nginx-repo.crt=${{ secrets.KIC_NGINX_CRT }}"
+  #           "nginx-repo.key=${{ secrets.KIC_NGINX_KEY }}"
+  #         build-args: |
+  #           BUILD_OS=debian-plus
+  #           PLUS=-plus
+  #       if: matrix.type == 'plus'
+  #     - name: Deploy Kubernetes
+  #       id: k8s
+  #       run: |
+  #         kind create cluster --name ${{ github.run_id }} --image=kindest/node:v${{ env.K8S_VERSION }} --wait ${{ env.K8S_TIMEOUT }}
+  #         kind load docker-image ${{ matrix.image }}:${{ matrix.tag }} --name ${{ github.run_id }}
+  #     - name: Install Chart
+  #       run: >
+  #         helm install
+  #         ${{ matrix.type }}
+  #         .
+  #         --set controller.image.repository=${{ matrix.image }}
+  #         --set controller.image.tag=${{ matrix.tag }}
+  #         --set controller.service.type=NodePort
+  #         --set controller.nginxplus=$([[ "${{ matrix.type }}" = "plus" ]] && echo "true" || echo "false")
+  #         --wait
+  #       working-directory: ${{ github.workspace }}/deployments/helm-chart
+  #     - name: Expose Test Ingresses
+  #       run: |
+  #         kubectl port-forward service/${{ matrix.type }}-nginx-ingress ${{ env.NGINX_HTTP_PORT }}:80 &
+  #         kubectl port-forward service/${{ matrix.type }}-nginx-ingress ${{ env.NGINX_HTTPS_PORT }}:443 &
+  #     - name: Test HTTP
+  #       run: |
+  #         counter=0
+  #         max_attempts=${{ env.HELM_TEST_RETRIES }}
+  #         until [ $(curl --write-out %{http_code} -s --output /dev/null http://localhost:${{ env.NGINX_HTTP_PORT }}) -eq 404 ]; do
+  #           if [ ${counter} -eq ${max_attempts} ]; then
+  #             exit 1
+  #           fi
+  #           printf '.'; counter=$(($counter+1)); sleep 5;
+  #         done
+  #     - name: Test HTTPS
+  #       run: |
+  #         counter=0
+  #         max_attempts=${{ env.HELM_TEST_RETRIES }}
+  #         until [ $(curl --write-out %{http_code} -ks --output /dev/null https://localhost:${{ env.NGINX_HTTPS_PORT }}) -eq 404 ]; do
+  #           if [ ${counter} -eq ${max_attempts} ]; then
+  #             exit 1
+  #           fi
+  #           printf '.'; counter=$(($counter+1)); sleep 5;
+  #         done
 
-  release-docker:
-    name: Release Images
-    runs-on: ${{ matrix.os }}
-    needs: [smoke-tests, helm-tests]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-20.04
-            image: nginx-ingress
-            tag: edge
-            type: debian
-          - os: ubuntu-20.04
-            image: nginx-ingress
-            tag: edge-alpine
-            type: alpine
-          - os: ubuntu-20.04
-            image: nginx-ingress
-            tag: edge-ubi
-            type: openshift
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-      - name: Fetch Cached Artifacts
-        uses: actions/cache@v2.1.4
-        with:
-          path: ${{ github.workspace }}/nginx-ingress
-          key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
-      - name: Docker Buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          driver-opts: network=host
-      - name: Cache Docker layers
-        uses: actions/cache@v2.1.4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-      - name: DockerHub Login
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Push to Dockerhub
-        uses: docker/build-push-action@v2
-        with:
-          file: build/Dockerfile
-          context: '.'
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-          target: local
-          tags: nginx/${{ matrix.image }}:${{ matrix.tag }}
-          push: true
-          build-args: |
-            BUILD_OS=${{ matrix.type }}
+  # release-docker:
+  #   name: Release Images
+  #   runs-on: ${{ matrix.os }}
+  #   needs: [smoke-tests, helm-tests]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - os: ubuntu-20.04
+  #           image: nginx-ingress
+  #           tag: edge
+  #           type: debian
+  #         - os: ubuntu-20.04
+  #           image: nginx-ingress
+  #           tag: edge-alpine
+  #           type: alpine
+  #         - os: ubuntu-20.04
+  #           image: nginx-ingress
+  #           tag: edge-ubi
+  #           type: openshift
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v2
+  #     - name: Fetch Cached Artifacts
+  #       uses: actions/cache@v2.1.4
+  #       with:
+  #         path: ${{ github.workspace }}/nginx-ingress
+  #         key: nginx-ingress-${{ github.run_id }}-${{ github.run_number }}
+  #     - name: Docker Buildx
+  #       uses: docker/setup-buildx-action@v1
+  #       with:
+  #         driver-opts: network=host
+  #     - name: Cache Docker layers
+  #       uses: actions/cache@v2.1.4
+  #       with:
+  #         path: /tmp/.buildx-cache
+  #         key: ${{ runner.os }}-buildx-${{ github.sha }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-buildx-
+  #     - name: DockerHub Login
+  #       uses: docker/login-action@v1
+  #       with:
+  #         username: ${{ secrets.DOCKER_USERNAME }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
+  #     - name: Push to Dockerhub
+  #       uses: docker/build-push-action@v2
+  #       with:
+  #         file: build/Dockerfile
+  #         context: '.'
+  #         cache-from: type=local,src=/tmp/.buildx-cache
+  #         cache-to: type=local,dest=/tmp/.buildx-cache
+  #         target: local
+  #         tags: nginx/${{ matrix.image }}:${{ matrix.tag }}
+  #         push: true
+  #         build-args: |
+  #           BUILD_OS=${{ matrix.type }}
 
-  package-helm:
-    name: Package Helm Chart
-    runs-on: ubuntu-20.04
-    needs: [smoke-tests, helm-tests, release-docker]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-      - name: Lint
-        run: |
-          helm lint ${{ env.HELM_CHART_DIR }} || true
-      - name: Package
-        run: |
-          helm package --version ${{ env.HELM_CHART_VERSION }} ${{ env.HELM_CHART_DIR }}
-      - name: Upload Chart
-        uses: actions/upload-artifact@v2
-        with:
-          name: helm-chart
-          path: ${{ github.workspace }}/nginx-ingress-${{ env.HELM_CHART_VERSION }}.tgz
+  # package-helm:
+  #   name: Package Helm Chart
+  #   runs-on: ubuntu-20.04
+  #   needs: [smoke-tests, helm-tests, release-docker]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v2
+  #     - name: Lint
+  #       run: |
+  #         helm lint ${{ env.HELM_CHART_DIR }} || true
+  #     - name: Package
+  #       run: |
+  #         helm package --version ${{ env.HELM_CHART_VERSION }} ${{ env.HELM_CHART_DIR }}
+  #     - name: Upload Chart
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: helm-chart
+  #         path: ${{ github.workspace }}/nginx-ingress-${{ env.HELM_CHART_VERSION }}.tgz
 
-  release-helm:
-    name: Release Helm Chart
-    runs-on: ubuntu-20.04
-    needs: [smoke-tests, helm-tests, release-docker, package-helm]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-        with:
-          repository: nginxinc/helm-charts
-          fetch-depth: 1
-          token: ${{ secrets.NGINX_PAT }}
-      - name: Remove previous Chart
-        run: rm -f ${{ github.workspace }}/edge/nginx-ingress-${{ env.HELM_CHART_VERSION }}.tgz
-      - name: Retrieve latest Helm Chart
-        uses: actions/download-artifact@v2
-        with:
-          name: helm-chart
-          path: ${{ github.workspace }}/edge
-      - name: Push Helm Chart
-        run: |
-          helm repo index edge --url https://helm.nginx.com/edge
-          git add -A
-          git -c user.name='${{ env.GIT_NAME }}' -c user.email='${{ env.GIT_MAIL }}' \
-          commit -m "NGINX Ingress Controller - Edge Release (latest)"
-          git push -u origin master
+  # release-helm:
+  #   name: Release Helm Chart
+  #   runs-on: ubuntu-20.04
+  #   needs: [smoke-tests, helm-tests, release-docker, package-helm]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v2
+  #       with:
+  #         repository: nginxinc/helm-charts
+  #         fetch-depth: 1
+  #         token: ${{ secrets.NGINX_PAT }}
+  #     - name: Remove previous Chart
+  #       run: rm -f ${{ github.workspace }}/edge/nginx-ingress-${{ env.HELM_CHART_VERSION }}.tgz
+  #     - name: Retrieve latest Helm Chart
+  #       uses: actions/download-artifact@v2
+  #       with:
+  #         name: helm-chart
+  #         path: ${{ github.workspace }}/edge
+  #     - name: Push Helm Chart
+  #       run: |
+  #         helm repo index edge --url https://helm.nginx.com/edge
+  #         git add -A
+  #         git -c user.name='${{ env.GIT_NAME }}' -c user.email='${{ env.GIT_MAIL }}' \
+  #         commit -m "NGINX Ingress Controller - Edge Release (latest)"
+  #         git push -u origin master
 
-  notify:
-    name: Notify
-    runs-on: ubuntu-20.04
-    needs: release-helm
-    if: always() && github.ref == 'refs/heads/master'
-    steps:
-      - name: Workflow Status
-        id: check
-        uses: martialonline/workflow-status@v2
-      - name: Output Variables
-        id: commit
-        run: |
-          echo "::set-output name=sha::$(echo ${GITHUB_SHA} | cut -c1-7)"
-          echo "::set-output name=repo::$(echo ${GITHUB_REPOSITORY} | cut -d '/' -f 2)"
-      - name: Send Notification
-        uses: 8398a7/action-slack@v3
-        if:
-          steps.check.outputs.status == 'failure' ||
-          steps.check.outputs.status == 'cancelled'
-        with:
-          status: custom
-          custom_payload: |
-            {
-              username: 'Github',
-              icon_emoji: ':octocat:',
-              mention: 'channel',
-              attachments: [{
-                title: '${{ steps.commit.outputs.repo }} ${{ github.workflow }} pipeline has failed',
-                color: '${{ steps.check.outputs.status }}' == 'failure' ? 'danger' : 'warning',
-                fields: [{
-                  title: 'Commit Hash',
-                  value: '${{ steps.commit.outputs.sha }}',
-                  short: true
-                },
-                {
-                  title: 'Author',
-                  value: '${{ github.actor }}',
-                  short: true
-                },
-                {
-                  title: 'Commit Message',
-                  value: `${{ github.event.head_commit.message }}`,
-                  short: false
-                },
-                {
-                  title: 'Pipeline URL',
-                  value: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}',
-                  short: false
-                }]
-              }]
-            }
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+  # notify:
+  #   name: Notify
+  #   runs-on: ubuntu-20.04
+  #   needs: release-helm
+  #   if: always() && github.ref == 'refs/heads/master'
+  #   steps:
+  #     - name: Workflow Status
+  #       id: check
+  #       uses: martialonline/workflow-status@v2
+  #     - name: Output Variables
+  #       id: commit
+  #       run: |
+  #         echo "::set-output name=sha::$(echo ${GITHUB_SHA} | cut -c1-7)"
+  #         echo "::set-output name=repo::$(echo ${GITHUB_REPOSITORY} | cut -d '/' -f 2)"
+  #     - name: Send Notification
+  #       uses: 8398a7/action-slack@v3
+  #       if:
+  #         steps.check.outputs.status == 'failure' ||
+  #         steps.check.outputs.status == 'cancelled'
+  #       with:
+  #         status: custom
+  #         custom_payload: |
+  #           {
+  #             username: 'Github',
+  #             icon_emoji: ':octocat:',
+  #             mention: 'channel',
+  #             attachments: [{
+  #               title: '${{ steps.commit.outputs.repo }} ${{ github.workflow }} pipeline has failed',
+  #               color: '${{ steps.check.outputs.status }}' == 'failure' ? 'danger' : 'warning',
+  #               fields: [{
+  #                 title: 'Commit Hash',
+  #                 value: '${{ steps.commit.outputs.sha }}',
+  #                 short: true
+  #               },
+  #               {
+  #                 title: 'Author',
+  #                 value: '${{ github.actor }}',
+  #                 short: true
+  #               },
+  #               {
+  #                 title: 'Commit Message',
+  #                 value: `${{ github.event.head_commit.message }}`,
+  #                 short: false
+  #               },
+  #               {
+  #                 title: 'Pipeline URL',
+  #                 value: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}',
+  #                 short: false
+  #               }]
+  #             }]
+  #           }
+  #       env:
+  #         GITHUB_TOKEN: ${{ github.token }}
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
