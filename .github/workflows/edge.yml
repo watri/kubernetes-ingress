@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - test-mac-runner
     paths-ignore:
       - 'docs/**'
       - 'docs-web/**'
@@ -244,27 +245,27 @@ jobs:
             tag: ${{ github.sha }}
             marker: 'policies'
             type: oss
-          - os: ubuntu-20.04
+          - os: macos-10.15
             image: nginx-plus-ingress
             tag: ${{ github.sha }}
             marker: 'ingresses'
             type: plus
-          - os: ubuntu-20.04
+          - os: macos-10.15
             image: nginx-plus-ingress
             tag: ${{ github.sha }}
             marker: 'vsr'
             type: plus
-          - os: ubuntu-20.04
+          - os: macos-10.15
             image: nginx-plus-ingress
             tag: ${{ github.sha }}
             marker: 'vs'
             type: plus
-          - os: ubuntu-20.04
+          - os: macos-10.15
             image: nginx-plus-ingress
             tag: ${{ github.sha }}
             marker: 'policies'
             type: plus
-          - os: ubuntu-20.04
+          - os: macos-10.15
             image: nginx-plus-ingress
             tag: ${{ github.sha }}-ap
             marker: 'appprotect'
