@@ -7,6 +7,7 @@ from suite.custom_resources_utils import (
     create_ap_policy_from_yaml,
     delete_ap_policy,
     delete_ap_logconf,
+    create_ap_waf_policy_from_yaml,
 )
 from suite.resources_utils import (
     wait_before_test,
@@ -39,8 +40,13 @@ from suite.custom_resources_utils import (
 )
 from suite.yaml_utils import get_first_ingress_host_from_yaml, get_name_from_yaml
 
+ap_pol_name = ""
+log_name = ""
 std_vs_src = f"{TEST_DATA}/ap-waf/standard/virtual-server.yaml"
-waf_vs_src = f"{TEST_DATA}/ap-waf/virtual-server.yaml"
+waf_spec_vs_src = f"{TEST_DATA}/ap-waf/virtual-server-waf-spec.yaml"
+waf_route_vs_src = f"{TEST_DATA}/ap-waf/virtual-server-waf-route.yaml"
+waf_pol_default_src = f"{TEST_DATA}/ap-waf/policies/waf-default.yaml"
+waf_pol_dataguard_src = f"{TEST_DATA}/ap-waf/policies/waf-dataguard.yaml"
 ap_policy_uds = "dataguard-alarm-uds"
 uds_crd = f"{DEPLOYMENTS}/common/crds-v1beta1/appprotect.f5.com_apusersigs.yaml"
 uds_crd_resource = f"{TEST_DATA}/ap-waf/ap-ic-uds.yaml"
@@ -62,6 +68,7 @@ def appprotect_setup(request, kube_apis, test_namespace) -> None:
 
     print("------------------------- Deploy logconf -----------------------------")
     src_log_yaml = f"{TEST_DATA}/ap-waf/logconf.yaml"
+    global log_name
     log_name = create_ap_logconf_from_yaml(kube_apis.custom_objects, src_log_yaml, test_namespace)
 
     print("------------------------- Create UserSig CRD -----------------------------")
@@ -78,11 +85,12 @@ def appprotect_setup(request, kube_apis, test_namespace) -> None:
 
     print(f"------------------------- Deploy dataguard-alarm appolicy ---------------------------")
     src_pol_yaml = f"{TEST_DATA}/ap-waf/{ap_policy_uds}.yaml"
-    pol_name = create_ap_policy_from_yaml(kube_apis.custom_objects, src_pol_yaml, test_namespace)
+    global ap_pol_name
+    ap_pol_name = create_ap_policy_from_yaml(kube_apis.custom_objects, src_pol_yaml, test_namespace)
 
     def fin():
         print("Clean up:")
-        delete_ap_policy(kube_apis.custom_objects, pol_name, test_namespace)  
+        delete_ap_policy(kube_apis.custom_objects, ap_pol_name, test_namespace)
         delete_ap_usersig(kube_apis.custom_objects, usersig_name, test_namespace)
         delete_crd(
             kube_apis.api_extensions_v1_beta1, ap_uds_crd_name,
@@ -96,6 +104,7 @@ def assert_ap_crd_info(ap_crd_info, policy_name) -> None:
     """
     Assert fields in AppProtect policy documents
     :param ap_crd_info: CRD output from k8s API
+    :param policy_name:
     """
     assert ap_crd_info["kind"] == "APPolicy"
     assert ap_crd_info["metadata"]["name"] == policy_name
@@ -127,7 +136,7 @@ def assert_valid_responses(response) -> None:
 
 
 @pytest.mark.skip_for_nginx_oss
-@pytest.mark.test
+@pytest.mark.appprotect
 @pytest.mark.parametrize(
     "crd_ingress_controller_with_ap, virtual_server_setup",
     [
@@ -146,7 +155,7 @@ def assert_valid_responses(response) -> None:
     ],
     indirect=True,
 )
-class TestAppProtect:
+class TestAppProtectWAFPolicy:
     def restore_default_vs(self, kube_apis, virtual_server_setup) -> None:
         """
         Restore VirtualServer without policy spec
@@ -160,29 +169,51 @@ class TestAppProtect:
         wait_before_test()
 
     @pytest.mark.smoke
-    @pytest.mark.parametrize("src", [waf_vs_src])
-    def test_ap_enable_true_policy_correct(
+    @pytest.mark.parametrize(
+        "vs_src, waf",
+        [
+            (waf_spec_vs_src, waf_pol_default_src),
+            (waf_spec_vs_src, waf_pol_dataguard_src),
+            (waf_route_vs_src, waf_pol_default_src),
+            (waf_route_vs_src, waf_pol_dataguard_src),
+        ],
+    )
+    def test_ap_waf_policy_block(
         self,
         kube_apis,
         crd_ingress_controller_with_ap,
         virtual_server_setup,
         appprotect_setup,
         test_namespace,
-        src,
+        vs_src,
+        waf,
     ):
         """
-        Test malicious script request is rejected while AppProtect is enabled in Ingress
+        Test waf policy when enabled with default and dataguard-alarm AP Policies
         """
-        waf_pol_src = f"{TEST_DATA}/ap-waf/waf.yaml"
         print(f"Create waf policy")
-        pol_name = create_policy_from_yaml(kube_apis.custom_objects, waf_pol_src, test_namespace)
+        if waf == waf_pol_dataguard_src:
+            create_ap_waf_policy_from_yaml(
+                kube_apis.custom_objects,
+                waf,
+                test_namespace,
+                True,
+                False,
+                ap_pol_name,
+                log_name,
+                "syslog:server=127.0.0.1:514",
+            )
+        elif waf == waf_pol_default_src:
+            pol_name = create_policy_from_yaml(kube_apis.custom_objects, waf, test_namespace)
+        else:
+            pytest.fail(f"Invalid argument")
+
         wait_before_test()
-        # print("--------- Run test while AppProtect module is enabled with correct policy ---------")
-        print(f"Patch vs with policy: {src}")
+        print(f"Patch vs with policy: {vs_src}")
         patch_virtual_server_from_yaml(
             kube_apis.custom_objects,
             virtual_server_setup.vs_name,
-            src,
+            vs_src,
             virtual_server_setup.namespace,
         )
         wait_before_test()
@@ -192,13 +223,169 @@ class TestAppProtect:
         assert_ap_crd_info(ap_crd_info, ap_policy_uds)
         wait_before_test(120)
 
-        print("----------------------- Send request ----------------------")
+        print(
+            "----------------------- Send request with embedded malicious script----------------------"
+        )
+        response1 = requests.get(
+            virtual_server_setup.backend_1_url + "</script>",
+            headers={"host": virtual_server_setup.vs_host},
+        )
+        print(response1.text)
+
+        print(
+            "----------------------- Send request with blocked keyword in UDS----------------------"
+        )
+        response2 = requests.get(
+            virtual_server_setup.backend_1_url + "</script>",
+            headers={"host": virtual_server_setup.vs_host},
+            data="kic",
+        )
+        print(response2.text)
+        
+        delete_policy(kube_apis.custom_objects, "waf-policy", test_namespace)
+        self.restore_default_vs(kube_apis, virtual_server_setup)
+        assert_invalid_responses(response1)
+        assert_invalid_responses(response2)
+
+    @pytest.mark.parametrize(
+        "vs_src, waf",
+        [
+            (waf_spec_vs_src, waf_pol_dataguard_src),
+            (waf_route_vs_src, waf_pol_dataguard_src),
+        ],
+    )
+    def test_ap_waf_policy_allow(
+        self,
+        kube_apis,
+        crd_ingress_controller_with_ap,
+        virtual_server_setup,
+        appprotect_setup,
+        test_namespace,
+        vs_src,
+        waf,
+    ):
+        """
+        Test waf policy when disabled
+        """
+        print(f"Create waf policy")
+        create_ap_waf_policy_from_yaml(
+            kube_apis.custom_objects,
+            waf,
+            test_namespace,
+            False,
+            False,
+            ap_pol_name,
+            log_name,
+            "syslog:server=127.0.0.1:514",
+        )
+        wait_before_test()
+        print(f"Patch vs with policy: {vs_src}")
+        patch_virtual_server_from_yaml(
+            kube_apis.custom_objects,
+            virtual_server_setup.vs_name,
+            vs_src,
+            virtual_server_setup.namespace,
+        )
+        wait_before_test()
+        ap_crd_info = read_ap_crd(
+            kube_apis.custom_objects, test_namespace, "appolicies", ap_policy_uds
+        )
+        assert_ap_crd_info(ap_crd_info, ap_policy_uds)
+        wait_before_test(120)
+
+        print(
+            "----------------------- Send request with embedded malicious script----------------------"
+        )
+        response1 = requests.get(
+            virtual_server_setup.backend_1_url + "</script>",
+            headers={"host": virtual_server_setup.vs_host},
+        )
+        print(response1.text)
+
+        print(
+            "----------------------- Send request with blocked keyword in UDS----------------------"
+        )
+        response2 = requests.get(
+            virtual_server_setup.backend_1_url + "</script>",
+            headers={"host": virtual_server_setup.vs_host},
+            data="kic",
+        )
+        print(response2.text)
+        
+        delete_policy(kube_apis.custom_objects, "waf-policy", test_namespace)
+        self.restore_default_vs(kube_apis, virtual_server_setup)
+        assert_valid_responses(response1)
+        assert_valid_responses(response2)
+
+    def test_ap_waf_policy_logs(
+        self,
+        kube_apis,
+        crd_ingress_controller_with_ap,
+        virtual_server_setup,
+        appprotect_setup,
+        test_namespace,
+    ):
+        """
+        Test waf policy logs
+        """
+        src_syslog_yaml = f"{TEST_DATA}/ap-waf/syslog.yaml"
+        log_loc = f"/var/log/messages"
+
+        create_items_from_yaml(kube_apis, src_syslog_yaml, test_namespace)
+
+        wait_before_test(40)
+        syslog_ep = (
+            kube_apis.v1.read_namespaced_endpoints("syslog-svc", test_namespace)
+            .subsets[0]
+            .addresses[0]
+            .ip
+        )
+        syslog_pod = kube_apis.v1.list_namespaced_pod(test_namespace).items[-1].metadata.name
+        print(f"Create waf policy")
+        create_ap_waf_policy_from_yaml(
+            kube_apis.custom_objects,
+            waf_pol_dataguard_src,
+            test_namespace,
+            True,
+            True,
+            ap_pol_name,
+            log_name,
+            f"syslog:server={syslog_ep}:514",
+        )
+        wait_before_test()
+        print(f"Patch vs with policy: {waf_spec_vs_src}")
+        patch_virtual_server_from_yaml(
+            kube_apis.custom_objects,
+            virtual_server_setup.vs_name,
+            waf_spec_vs_src,
+            virtual_server_setup.namespace,
+        )
+        wait_before_test()
+        ap_crd_info = read_ap_crd(
+            kube_apis.custom_objects, test_namespace, "appolicies", ap_policy_uds
+        )
+        assert_ap_crd_info(ap_crd_info, ap_policy_uds)
+        wait_before_test(120)
+
+        print(
+            "----------------------- Send request with embedded malicious script----------------------"
+        )
         response = requests.get(
-            virtual_server_setup.backend_1_url+"</script>", headers={"host": virtual_server_setup.vs_host},
+            virtual_server_setup.backend_1_url + "</script>",
+            headers={"host": virtual_server_setup.vs_host},
         )
         print(response.text)
-        delete_policy(kube_apis.custom_objects, pol_name, test_namespace)
+        wait_before_test(5)
+        log_contents = get_file_contents(kube_apis.v1, log_loc, syslog_pod, test_namespace)
+        
+        delete_policy(kube_apis.custom_objects, "waf-policy", test_namespace)
         self.restore_default_vs(kube_apis, virtual_server_setup)
+        
         assert_invalid_responses(response)
-
-    
+        assert (
+            f'ASM:attack_type="Non-browser Client,Abuse of Functionality,Cross Site Scripting (XSS)"'
+            in log_contents
+        )
+        assert f'severity="Critical"' in log_contents
+        assert f'request_status="blocked"' in log_contents
+        assert f'outcome="REJECTED"' in log_contents
