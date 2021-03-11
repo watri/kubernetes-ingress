@@ -189,9 +189,9 @@ name: access-control
    * - ``name``
      - The name of a policy. If the policy doesn't exist or invalid, NGINX will respond with an error response with the `500` status code.
      - ``string``
-     - Yes 
+     - Yes
    * - ``namespace``
-     - The namespace of a policy. If not specified, the namespace of the VirtualServer resource is used. 
+     - The namespace of a policy. If not specified, the namespace of the VirtualServer resource is used.
      - ``string``
      - No
 ```
@@ -218,7 +218,7 @@ The route defines rules for matching client requests to actions like passing a r
      - ``string``
      - Yes
    * - ``policies``
-     - A list of policies. The policies override the policies of the same type defined in the ``spec`` of the VirtualServer. See `Applying Policies </nginx-ingress-controller/configuration/policy-resource/#applying-policies>`_ for more details. 
+     - A list of policies. The policies override the policies of the same type defined in the ``spec`` of the VirtualServer. See `Applying Policies </nginx-ingress-controller/configuration/policy-resource/#applying-policies>`_ for more details.
      - `[]policy <#virtualserver-policy>`_
      - No
    * - ``action``
@@ -351,7 +351,7 @@ action:
      - ``string``
      - Yes
    * - ``policies``
-     - A list of policies. The policies override *all* policies defined in the route of the VirtualServer that references this resource. The policies also override the policies of the same type defined in the ``spec`` of the VirtualServer. See `Applying Policies </nginx-ingress-controller/configuration/policy-resource/#applying-policies>`_ for more details. 
+     - A list of policies. The policies override *all* policies defined in the route of the VirtualServer that references this resource. The policies also override the policies of the same type defined in the ``spec`` of the VirtualServer. See `Applying Policies </nginx-ingress-controller/configuration/policy-resource/#applying-policies>`_ for more details.
      - `[]policy <#virtualserver-policy>`_
      - No
    * - ``action``
@@ -506,6 +506,10 @@ tls:
    * - ``buffer-size``
      - Sets the size of the buffer used for reading the first part of a response received from the upstream server. See the `proxy_buffer_size <https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffer_size>`_ directive. The default is set in the ``proxy-buffer-size`` ConfigMap key.
      - ``string``
+     - No
+   * - ``use-cluster-ip``
+     - Enables using Cluster IP and port instead of the default behavior of using Pod IP and port. When this field is enabled, the fields that configure NGINX behavior related to multiple upstream servers (like `lb-method` and `next-upstream`) will have no effect, as the Ingress Controller will configure NGINX with only one upstream server that will match the service Cluster IP.
+     - ``boolean``
      - No
 ```
 
@@ -945,13 +949,13 @@ The RequestHeaders field modifies the headers of the request to the proxied upst
 
 The header defines an HTTP Header:
 ```yaml
-name: My-Header 
+name: My-Header
 value: My-Value
 ```
 
 It is possible to override the default value of the `Host` header, which the Ingress Controller sets to [`$host`](https://nginx.org/en/docs/http/ngx_http_core_module.html#var_host):
 ```yaml
-name: Host 
+name: Host
 value: example.com
 ```
 
@@ -1013,8 +1017,8 @@ The ResponseHeaders field modifies the headers of the response to the client.
 
 The addHeader defines an HTTP Header with an optional `always` field:
 ```yaml
-name: My-Header 
-value: My-Value 
+name: My-Header
+value: My-Value
 always: true
 ```
 
@@ -1464,7 +1468,7 @@ Additionally, this information is also available in the `status` field of the Vi
 
 ```
 $ kubectl describe vs cafe
-. . . 
+. . .
 Status:
   External Endpoints:
     Ip:        12.13.23.123
