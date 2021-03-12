@@ -136,6 +136,7 @@ def create_ap_waf_policy_from_yaml(
     custom_objects: CustomObjectsApi,
     yaml_manifest,
     namespace,
+    ap_namespace,
     waf_enable,
     log_enable,
     appolicy,
@@ -148,6 +149,7 @@ def create_ap_waf_policy_from_yaml(
     :param custom_objects: CustomObjectsApi
     :param yaml_manifest: an absolute path to file
     :param namespace: namespace for test resources
+    :param ap_namespace: namespace for AppProtect resources
     :param waf_enable: true/false
     :param log_enable: true/false
     :param appolicy: AppProtect policy name
@@ -159,9 +161,9 @@ def create_ap_waf_policy_from_yaml(
         dep = yaml.safe_load(f)
     try:
         dep["spec"]["waf"]["enable"] = waf_enable
-        dep["spec"]["waf"]["apPolicy"] = f"{namespace}/{appolicy}"
+        dep["spec"]["waf"]["apPolicy"] = f"{ap_namespace}/{appolicy}"
         dep["spec"]["waf"]["securityLog"]["enable"] = log_enable
-        dep["spec"]["waf"]["securityLog"]["apLogConf"] = f"{namespace}/{aplogconf}"
+        dep["spec"]["waf"]["securityLog"]["apLogConf"] = f"{ap_namespace}/{aplogconf}"
         dep["spec"]["waf"]["securityLog"]["logDest"] = f"{logdest}"
 
         custom_objects.create_namespaced_custom_object(

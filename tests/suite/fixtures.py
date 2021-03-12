@@ -794,7 +794,7 @@ class VirtualServerRouteSetup:
 
 @pytest.fixture(scope="class")
 def v_s_route_setup(
-    request, kube_apis, crd_ingress_controller, ingress_controller_endpoint
+    request, kube_apis, ingress_controller_endpoint
 ) -> VirtualServerRouteSetup:
     """
     Prepare Virtual Server Route Example.
