@@ -427,6 +427,10 @@ tls:
      - Selects the pods within the service using label keys and values. By default, all pods of the service are selected. Note: the specified labels are expected to be present in the pods when they are created. If the pod labels are updated, the Ingress Controller will not see that change until the number of the pods is changed.
      - ``map[string]string``
      - No
+   * - ``use-cluster-ip``
+     - Enables using Cluster IP and port instead of the default behavior of using Pod IP and port. When this field is enabled, the fields that configure NGINX behavior related to multiple upstream servers (like ``lb-method`` and ``next-upstream``) will have no effect, as the Ingress Controller will configure NGINX with only one upstream server that will match the service Cluster IP.
+     - ``boolean``
+     - No
    * - ``port``
      - The port of the service. If the service doesn't define that port, NGINX will assume the service has zero endpoints and return a ``502`` response for requests for this upstream. The port must fall into the range ``1..65535``.
      - ``uint16``
@@ -506,10 +510,6 @@ tls:
    * - ``buffer-size``
      - Sets the size of the buffer used for reading the first part of a response received from the upstream server. See the `proxy_buffer_size <https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffer_size>`_ directive. The default is set in the ``proxy-buffer-size`` ConfigMap key.
      - ``string``
-     - No
-   * - ``use-cluster-ip``
-     - Enables using Cluster IP and port instead of the default behavior of using Pod IP and port. When this field is enabled, the fields that configure NGINX behavior related to multiple upstream servers (like `lb-method` and `next-upstream`) will have no effect, as the Ingress Controller will configure NGINX with only one upstream server that will match the service Cluster IP.
-     - ``boolean``
      - No
 ```
 

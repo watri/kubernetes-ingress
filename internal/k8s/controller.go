@@ -19,7 +19,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -2283,9 +2282,9 @@ func (lbc *LoadBalancerController) createVirtualServerEx(virtualServer *conf_v1.
 			s, err := lbc.getServiceForUpstream(virtualServer.Namespace, u.Service, u.Port)
 			if err != nil {
 				glog.Warningf("Error getting Service for Upstream %v: %v", u.Service, err)
+			} else {
+				endps = append(endps, fmt.Sprintf("%s:%d", s.Spec.ClusterIP, u.Port))
 			}
-			port := strconv.Itoa(int(u.Port))
-			endps = append(endps, fmt.Sprintf("%s:%s", s.Spec.ClusterIP, port))
 
 		} else {
 			var podEndps []podEndpoint
@@ -2382,12 +2381,12 @@ func (lbc *LoadBalancerController) createVirtualServerEx(virtualServer *conf_v1.
 
 			var endps []string
 			if u.UseClusterIP {
-				s, err := lbc.getServiceForUpstream(virtualServer.Namespace, u.Service, u.Port)
+				s, err := lbc.getServiceForUpstream(vsr.Namespace, u.Service, u.Port)
 				if err != nil {
 					glog.Warningf("Error getting Service for Upstream %v: %v", u.Service, err)
+				} else {
+					endps = append(endps, fmt.Sprintf("%s:%d", s.Spec.ClusterIP, u.Port))
 				}
-				port := strconv.Itoa(int(u.Port))
-				endps = append(endps, fmt.Sprintf("%s:%s", s.Spec.ClusterIP, port))
 
 			} else {
 				var podEndps []podEndpoint
