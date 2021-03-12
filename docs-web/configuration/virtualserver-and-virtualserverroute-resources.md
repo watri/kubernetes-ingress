@@ -428,7 +428,7 @@ tls:
      - ``map[string]string``
      - No
    * - ``use-cluster-ip``
-     - Enables using Cluster IP and port instead of the default behavior of using Pod IP and port. When this field is enabled, the fields that configure NGINX behavior related to multiple upstream servers (like ``lb-method`` and ``next-upstream``) will have no effect, as the Ingress Controller will configure NGINX with only one upstream server that will match the service Cluster IP.
+     - Enables using the Cluster IP and port of the service instead of the default behavior of using the IP and port of the pods. When this field is enabled, the fields that configure NGINX behavior related to multiple upstream servers (like ``lb-method` and `next-upstream``) will have no effect, as the Ingress Controller will configure NGINX with only one upstream server that will match the service Cluster IP.
      - ``boolean``
      - No
    * - ``port``
