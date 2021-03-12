@@ -1116,6 +1116,44 @@ func TestEndpointIsReferencedByVirtualServerAndVirtualServerRoutes(t *testing.T)
 			expected:         false,
 			msg:              "upstream uses clusterIP",
 		},
+		{
+			vs: &conf_v1.VirtualServer{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "default",
+				},
+				Spec: conf_v1.VirtualServerSpec{
+					Upstreams: []conf_v1.Upstream{
+						{
+							Service:      "test-service",
+							UseClusterIP: true,
+						},
+						{
+							Service: "test-service",
+						},
+					},
+				},
+			},
+			vsr: &conf_v1.VirtualServerRoute{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "default",
+				},
+				Spec: conf_v1.VirtualServerRouteSpec{
+					Upstreams: []conf_v1.Upstream{
+						{
+							Service:      "test-service",
+							UseClusterIP: true,
+						},
+						{
+							Service: "test-service",
+						},
+					},
+				},
+			},
+			serviceNamespace: "default",
+			serviceName:      "test-service",
+			expected:         true,
+			msg:              "one upstream without Cluster IP",
+		},
 	}
 
 	for _, test := range tests {

@@ -124,7 +124,7 @@ func (rc *serviceReferenceChecker) IsReferencedByVirtualServer(svcNamespace stri
 
 	for _, u := range vs.Spec.Upstreams {
 		if rc.hasClusterIP && u.UseClusterIP {
-			return false
+			continue
 		}
 		if u.Service == svcName {
 			return true
@@ -141,7 +141,7 @@ func (rc *serviceReferenceChecker) IsReferencedByVirtualServerRoute(svcNamespace
 
 	for _, u := range vsr.Spec.Upstreams {
 		if rc.hasClusterIP && u.UseClusterIP {
-			return false
+			continue
 		}
 		if u.Service == svcName {
 			return true
