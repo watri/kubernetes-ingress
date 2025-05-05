@@ -9,3 +9,5 @@ urllib3==1.26.3
 pytest-html==2.1.1
 pytest-repeat==0.9.1
 locust==1.4.3
+gevent>=25.4.1 # not directly required, pinned by Snyk to avoid a vulnerability
+setuptools>=78.1.1 # not directly required, pinned by Snyk to avoid a vulnerability
